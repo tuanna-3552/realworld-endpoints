@@ -13,6 +13,8 @@ type RouterOptions struct {
 	UserHandler    *handlers.UserHandler
 	ArticleHandler *handlers.ArticleHandler
 	TagHandler     *handlers.TagHandler
+	ProfileHandler *handlers.ProfileHandler
+	CommentHandler *handlers.CommentHandler
 }
 
 func SetupRoutes(e *echo.Echo, opts RouterOptions) {
@@ -33,6 +35,14 @@ func SetupRoutes(e *echo.Echo, opts RouterOptions) {
 
 	// Articles routes
 	api.GET("/articles", opts.ArticleHandler.GetArticles)
+	api.GET("/articles/:slug", opts.ArticleHandler.GetArticleBySlug)
+
+	// Comments routes
+	api.GET("/articles/:slug/comments", opts.CommentHandler.GetComments)
+	api.POST("/articles/:slug/comments", opts.CommentHandler.CreateComment)
+
+	// Profiles routes
+	api.GET("/profiles/:username", opts.ProfileHandler.GetProfile)
 
 	// Tags routes
 	api.GET("/tags", opts.TagHandler.GetTags)

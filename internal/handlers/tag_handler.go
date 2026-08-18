@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"realworld-endpoints/internal/dto"
 	"realworld-endpoints/internal/repository"
 
 	"github.com/labstack/echo/v4"
@@ -16,6 +17,7 @@ func NewTagHandler(tagRepo repository.TagRepository) *TagHandler {
 	return &TagHandler{tagRepo: tagRepo}
 }
 
+// GetTags handles GET /api/tags
 func (h *TagHandler) GetTags(c echo.Context) error {
 	tags, err := h.tagRepo.FindAll()
 	if err != nil {
@@ -24,16 +26,12 @@ func (h *TagHandler) GetTags(c echo.Context) error {
 		})
 	}
 
-	var tagNames []string
+	tagNames := make([]string, 0, len(tags))
 	for _, tag := range tags {
 		tagNames = append(tagNames, tag.Name)
 	}
 
-	if tagNames == nil {
-		tagNames = []string{}
-	}
-
-	return c.JSON(http.StatusOK, echo.Map{
-		"tags": tagNames,
+	return c.JSON(http.StatusOK, dto.TagsResponse{
+		Tags: tagNames,
 	})
 }

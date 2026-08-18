@@ -58,5 +58,11 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	log.Println("Database AutoMigrate completed successfully.")
+
+	// Automatically seed initial data if DB is empty
+	if seedErr := Seed(db); seedErr != nil {
+		log.Printf("Warning: Database seeding failed: %v", seedErr)
+	}
+
 	return db, nil
 }

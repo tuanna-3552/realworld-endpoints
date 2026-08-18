@@ -19,7 +19,7 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// 2. Initialize Database (PostgreSQL via GORM)
+	// 2. Initialize Database (PostgreSQL via GORM & Seed Data)
 	database, err := db.InitDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
@@ -29,11 +29,14 @@ func main() {
 	userRepo := repository.NewUserRepository(database)
 	articleRepo := repository.NewArticleRepository(database)
 	tagRepo := repository.NewTagRepository(database)
+	commentRepo := repository.NewCommentRepository(database)
 
 	// 4. Initialize Handlers
 	userHandler := handlers.NewUserHandler(userRepo)
 	articleHandler := handlers.NewArticleHandler(articleRepo)
 	tagHandler := handlers.NewTagHandler(tagRepo)
+	profileHandler := handlers.NewProfileHandler(userRepo)
+	commentHandler := handlers.NewCommentHandler(commentRepo, articleRepo, userRepo)
 
 	// 5. Initialize Echo Framework
 	e := echo.New()
@@ -43,6 +46,8 @@ func main() {
 		UserHandler:    userHandler,
 		ArticleHandler: articleHandler,
 		TagHandler:     tagHandler,
+		ProfileHandler: profileHandler,
+		CommentHandler: commentHandler,
 	})
 
 	// 7. Start HTTP Server
