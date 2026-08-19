@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"realworld-endpoints/internal/handlers"
+	customMiddleware "realworld-endpoints/internal/middleware"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -15,6 +16,7 @@ type RouterOptions struct {
 	TagHandler     *handlers.TagHandler
 	ProfileHandler *handlers.ProfileHandler
 	CommentHandler *handlers.CommentHandler
+	JWTSecret      string
 }
 
 func SetupRoutes(e *echo.Echo, opts RouterOptions) {
@@ -30,7 +32,11 @@ func SetupRoutes(e *echo.Echo, opts RouterOptions) {
 	// API Group
 	api := e.Group("/api")
 
-	// Users routes
+	// Authentication routes (Public)
+	api.POST("/users", opts.UserHandler.Register)
+	api.POST("/users/login", opts.UserHandler.Login)
+
+	// Users routes (Public list)
 	api.GET("/users", opts.UserHandler.GetUsers)
 
 	// Articles routes
@@ -46,4 +52,8 @@ func SetupRoutes(e *echo.Echo, opts RouterOptions) {
 
 	// Tags routes
 	api.GET("/tags", opts.TagHandler.GetTags)
+
+	// Protected routes (Require JWT Authentication)
+	authGroup := api.Group("", customMiddleware.JWTMiddleware(opts.JWTSecret))
+	authGroup.GET("/user", opts.UserHandler.GetCurrentUser)
 }

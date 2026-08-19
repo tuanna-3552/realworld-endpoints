@@ -32,7 +32,7 @@ func main() {
 	commentRepo := repository.NewCommentRepository(database)
 
 	// 4. Initialize Handlers
-	userHandler := handlers.NewUserHandler(userRepo)
+	userHandler := handlers.NewUserHandler(userRepo, cfg.JWTSecret)
 	articleHandler := handlers.NewArticleHandler(articleRepo)
 	tagHandler := handlers.NewTagHandler(tagRepo)
 	profileHandler := handlers.NewProfileHandler(userRepo)
@@ -48,6 +48,7 @@ func main() {
 		TagHandler:     tagHandler,
 		ProfileHandler: profileHandler,
 		CommentHandler: commentHandler,
+		JWTSecret:      cfg.JWTSecret,
 	})
 
 	// 7. Start HTTP Server
