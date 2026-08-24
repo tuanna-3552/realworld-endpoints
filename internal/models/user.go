@@ -14,3 +14,9 @@ type User struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+
+type UserFollow struct {
+	FollowerID uint      `gorm:"primaryKey;index" json:"followerId"`
+	FollowedID uint      `gorm:"primaryKey;index" json:"followedId"`
+	CreatedAt  time.Time `json:"createdAt"`
+}

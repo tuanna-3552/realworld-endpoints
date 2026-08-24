@@ -21,14 +21,73 @@ func NewProfileHandler(userRepo repository.UserRepository) *ProfileHandler {
 func (h *ProfileHandler) GetProfile(c echo.Context) error {
 	username := c.Param("username")
 	if username == "" {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Username parameter is required"})
+		return c.JSON(http.StatusBadRequest, echo.Map{"errors": echo.Map{"body": []string{"Username parameter is required"}}})
 	}
 
 	user, err := h.userRepo.FindByUsername(username)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": "Profile not found"})
+		return c.JSON(http.StatusNotFound, echo.Map{"errors": echo.Map{"profile": []string{"not found"}}})
 	}
 
-	profileDTO := dto.ToProfileDTO(user, false)
+	following := false
+	if currentUserIDVal := c.Get("user_id"); currentUserIDVal != nil {
+		if currentUserID, ok := currentUserIDVal.(uint); ok {
+			following = h.userRepo.IsFollowing(currentUserID, user.ID)
+		}
+	}
+
+	profileDTO := dto.ToProfileDTO(user, following)
+	return c.JSON(http.StatusOK, dto.ProfileResponse{Profile: profileDTO})
+}
+
+// FollowUser handles POST /api/profiles/:username/follow
+func (h *ProfileHandler) FollowUser(c echo.Context) error {
+	username := c.Param("username")
+	if username == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{"errors": echo.Map{"body": []string{"Username parameter is required"}}})
+	}
+
+	currentUserIDVal := c.Get("user_id")
+	if currentUserIDVal == nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"errors": echo.Map{"body": []string{"unauthorized"}}})
+	}
+	currentUserID := currentUserIDVal.(uint)
+
+	targetUser, err := h.userRepo.FindByUsername(username)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"errors": echo.Map{"profile": []string{"not found"}}})
+	}
+
+	if err := h.userRepo.Follow(currentUserID, targetUser.ID); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"errors": echo.Map{"body": []string{"failed to follow user"}}})
+	}
+
+	profileDTO := dto.ToProfileDTO(targetUser, true)
+	return c.JSON(http.StatusOK, dto.ProfileResponse{Profile: profileDTO})
+}
+
+// UnfollowUser handles DELETE /api/profiles/:username/follow
+func (h *ProfileHandler) UnfollowUser(c echo.Context) error {
+	username := c.Param("username")
+	if username == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{"errors": echo.Map{"body": []string{"Username parameter is required"}}})
+	}
+
+	currentUserIDVal := c.Get("user_id")
+	if currentUserIDVal == nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"errors": echo.Map{"body": []string{"unauthorized"}}})
+	}
+	currentUserID := currentUserIDVal.(uint)
+
+	targetUser, err := h.userRepo.FindByUsername(username)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"errors": echo.Map{"profile": []string{"not found"}}})
+	}
+
+	if err := h.userRepo.Unfollow(currentUserID, targetUser.ID); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"errors": echo.Map{"body": []string{"failed to unfollow user"}}})
+	}
+
+	profileDTO := dto.ToProfileDTO(targetUser, false)
 	return c.JSON(http.StatusOK, dto.ProfileResponse{Profile: profileDTO})
 }

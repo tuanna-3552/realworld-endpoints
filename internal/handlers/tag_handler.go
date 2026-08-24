@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
+	"realworld-endpoints/internal/cache"
 	"realworld-endpoints/internal/dto"
 	"realworld-endpoints/internal/repository"
 
@@ -11,14 +13,29 @@ import (
 
 type TagHandler struct {
 	tagRepo repository.TagRepository
+	cache   cache.CacheService
 }
 
-func NewTagHandler(tagRepo repository.TagRepository) *TagHandler {
-	return &TagHandler{tagRepo: tagRepo}
+func NewTagHandler(tagRepo repository.TagRepository, cacheService cache.CacheService) *TagHandler {
+	return &TagHandler{
+		tagRepo: tagRepo,
+		cache:   cacheService,
+	}
 }
 
 // GetTags handles GET /api/tags
 func (h *TagHandler) GetTags(c echo.Context) error {
+	ctx := c.Request().Context()
+	
+	if h.cache != nil {
+		if cached, err := h.cache.Get(ctx, cache.TagsCacheKey); err == nil {
+			var resp dto.TagsResponse
+			if err := json.Unmarshal([]byte(cached), &resp); err == nil {
+				return c.JSON(http.StatusOK, resp)
+			}
+		}
+	}
+
 	tags, err := h.tagRepo.FindAll()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -31,7 +48,15 @@ func (h *TagHandler) GetTags(c echo.Context) error {
 		tagNames = append(tagNames, tag.Name)
 	}
 
-	return c.JSON(http.StatusOK, dto.TagsResponse{
+	resp := dto.TagsResponse{
 		Tags: tagNames,
-	})
+	}
+
+	if h.cache != nil {
+		if data, err := json.Marshal(resp); err == nil {
+			_ = h.cache.Set(ctx, cache.TagsCacheKey, string(data), cache.TagsCacheTTL)
+		}
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }

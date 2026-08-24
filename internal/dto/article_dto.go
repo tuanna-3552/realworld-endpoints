@@ -28,7 +28,7 @@ type ArticlesResponse struct {
 	ArticlesCount int          `json:"articlesCount"`
 }
 
-func ToArticleDTO(article *models.Article) ArticleDTO {
+func ToArticleDTOWithStatus(article *models.Article, favorited bool, following bool) ArticleDTO {
 	tagList := make([]string, 0)
 	for _, tag := range article.Tags {
 		tagList = append(tagList, tag.Name)
@@ -42,10 +42,14 @@ func ToArticleDTO(article *models.Article) ArticleDTO {
 		TagList:        tagList,
 		CreatedAt:      article.CreatedAt,
 		UpdatedAt:      article.UpdatedAt,
-		Favorited:      false,
+		Favorited:      favorited,
 		FavoritesCount: article.FavoritesCount,
-		Author:         ToProfileDTO(&article.Author, false),
+		Author:         ToProfileDTO(&article.Author, following),
 	}
+}
+
+func ToArticleDTO(article *models.Article) ArticleDTO {
+	return ToArticleDTOWithStatus(article, false, false)
 }
 
 func ToArticlesDTO(articles []models.Article) []ArticleDTO {

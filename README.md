@@ -30,8 +30,8 @@ realworld-endpoints/
 │   ├── db/                      # GORM PostgreSQL initialization & auto-migrations
 │   ├── dto/                     # Data Transfer Objects (Request/Response schemas)
 │   ├── handlers/                # HTTP Handlers (Controllers)
-│   ├── middleware/              # Echo Middlewares (Logger, Recover, JWT Auth)
-│   ├── models/                  # GORM models (User, Article, Comment, Tag)
+│   ├── middleware/              # Echo Middlewares (Logger, Recover, JWT Auth, Optional Auth)
+│   ├── models/                  # GORM models (User, Article, Comment, Tag, UserFollow, ArticleFavorite)
 │   ├── repository/              # Data access layer (Interfaces & GORM implementations)
 │   └── routes/                  # Echo Router setup & endpoint registrations
 ├── .env                         # Local environment configuration
@@ -100,34 +100,73 @@ The server will initialize the PostgreSQL connection, execute GORM AutoMigrate f
 | `POST` | `/api/users/login` | No | User login (returns JWT Token) |
 | `GET` | `/api/user` | **Yes (JWT)** | Get current authenticated user profile |
 | `GET` | `/api/users` | No | List all users |
-| `GET` | `/api/articles` | No | List articles |
-| `GET` | `/api/articles/:slug` | No | Get article details by slug |
-| `GET` | `/api/articles/:slug/comments` | No | Get comments for an article |
-| `POST` | `/api/articles/:slug/comments` | No | Add comment to an article |
-| `GET` | `/api/profiles/:username` | No | Get user profile by username |
+| `GET` | `/api/articles` | Optional | List articles (supports `tag`, `author`, `favorited`, `limit`, `offset`) |
+| `GET` | `/api/articles/feed` | **Yes (JWT)** | Get articles feed from followed users |
+| `GET` | `/api/articles/:slug` | Optional | Get article details by slug |
+| `POST` | `/api/articles/:slug/favorite` | **Yes (JWT)** | Favorite an article |
+| `DELETE` | `/api/articles/:slug/favorite` | **Yes (JWT)** | Unfavorite an article |
+| `GET` | `/api/articles/:slug/comments` | Optional | Get comments for an article |
+| `POST` | `/api/articles/:slug/comments` | **Yes (JWT)** | Add comment to an article |
+| `DELETE` | `/api/articles/:slug/comments/:id` | **Yes (JWT)** | Delete personal comment (ownership enforced) |
+| `GET` | `/api/profiles/:username` | Optional | Get user profile by username |
+| `POST` | `/api/profiles/:username/follow` | **Yes (JWT)** | Follow a user |
+| `DELETE` | `/api/profiles/:username/follow` | **Yes (JWT)** | Unfollow a user |
 | `GET` | `/api/tags` | No | List all tags |
 
 ---
 
-## 🔑 Step 4: JWT Authentication Guide
+## 🔑 Authentication & Features Usage Guide
 
-### 1. Register New User (`POST /api/users`)
+### 1. User Register & Login
 ```bash
+# Register
 curl -X POST http://localhost:8080/api/users \
   -H "Content-Type: application/json" \
   -d '{"user":{"username":"johndoe","email":"john@example.com","password":"password123"}}'
-```
 
-### 2. User Login (`POST /api/users/login`)
-```bash
+# Login
 curl -X POST http://localhost:8080/api/users/login \
   -H "Content-Type: application/json" \
   -d '{"user":{"email":"john@example.com","password":"password123"}}'
 ```
 
-### 3. Get Current User (`GET /api/user`)
+### 2. Filtering & Pagination (`GET /api/articles`)
 ```bash
-curl -X GET http://localhost:8080/api/user \
+# Filter by tag and author with limit/offset
+curl "http://localhost:8080/api/articles?tag=dragons&author=johndoe&limit=10&offset=0"
+```
+
+### 3. User Feed (`GET /api/articles/feed`)
+```bash
+curl -X GET "http://localhost:8080/api/articles/feed?limit=10&offset=0" \
+  -H "Authorization: Token <YOUR_JWT_TOKEN>"
+```
+
+### 4. Follow / Unfollow User
+```bash
+# Follow User
+curl -X POST http://localhost:8080/api/profiles/johndoe/follow \
+  -H "Authorization: Token <YOUR_JWT_TOKEN>"
+
+# Unfollow User
+curl -X DELETE http://localhost:8080/api/profiles/johndoe/follow \
+  -H "Authorization: Token <YOUR_JWT_TOKEN>"
+```
+
+### 5. Favorite / Unfavorite Article
+```bash
+# Favorite Article
+curl -X POST http://localhost:8080/api/articles/how-to-train-your-dragon/favorite \
+  -H "Authorization: Token <YOUR_JWT_TOKEN>"
+
+# Unfavorite Article
+curl -X DELETE http://localhost:8080/api/articles/how-to-train-your-dragon/favorite \
+  -H "Authorization: Token <YOUR_JWT_TOKEN>"
+```
+
+### 6. Delete Personal Comment
+```bash
+curl -X DELETE http://localhost:8080/api/articles/how-to-train-your-dragon/comments/1 \
   -H "Authorization: Token <YOUR_JWT_TOKEN>"
 ```
 
@@ -153,7 +192,7 @@ go build -o api.exe ./cmd/api
 - [x] **Step 2:** Basic CRUD with Handlers & Data Binding (`GET /api/articles`, `GET /api/articles/:slug`, `GET /api/tags`).
 - [x] **Step 3:** Model Relationships & Data Transformation (`GET/POST /api/articles/:slug/comments`, `GET /api/profiles/:username`, DTOs, GORM Preload).
 - [x] **Step 4:** User Authentication via JWT (`POST /api/users`, `POST /api/users/login`, `GET /api/user`, JWT Middleware, bcrypt password hashing).
-- [ ] **Step 5:** Middleware, Filtering & Pagination (Custom permission middleware, query parameters filtering, limit/offset pagination).
-- [ ] **Step 6:** Social Features - Like, Follow & Comment (Favorite/Unfavorite articles, follow users, delete comments).
-- [ ] **Step 7:** Testing & Optimization (Unit testing with `httptest`, Redis caching for high-frequency endpoints, `.env` management).
+- [x] **Step 5:** Middleware, Filtering & Pagination (Optional Auth Middleware, query parameters filtering by `tag`/`author`/`favorited`, `limit`/`offset` pagination, `GET /api/articles/feed`).
+- [x] **Step 6:** Social Features - Like, Follow & Comment (Favorite/Unfavorite articles, follow/unfollow users, delete comments with ownership check).
+- [x] **Step 7:** Testing & Optimization (Unit testing with `httptest`, Redis caching for high-frequency endpoints, `.env` management).
 - [ ] **Step 8:** Summary & Final Build (Swagger/OpenAPI integration, GORM query optimization avoiding N+1 problem).

@@ -52,6 +52,8 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		&models.Tag{},
 		&models.Article{},
 		&models.Comment{},
+		&models.UserFollow{},
+		&models.ArticleFavorite{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto-migrate database schema: %w", err)

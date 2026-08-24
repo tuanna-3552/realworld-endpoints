@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
 
+	"realworld-endpoints/internal/cache"
 	"realworld-endpoints/internal/config"
 	"realworld-endpoints/internal/db"
 	"realworld-endpoints/internal/handlers"
@@ -10,6 +12,7 @@ import (
 	"realworld-endpoints/internal/routes"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -25,23 +28,39 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// 3. Initialize Repositories
+	// 3. Initialize Redis (graceful: warn and continue if unavailable)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddr(),
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
+
+	var cacheService cache.CacheService
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		log.Printf("[WARNING] Redis connection failed: %v. Caching disabled.", err)
+		cacheService = nil
+	} else {
+		log.Println("[Redis] Connected successfully")
+		cacheService = cache.NewRedisCacheService(redisClient)
+	}
+
+	// 4. Initialize Repositories
 	userRepo := repository.NewUserRepository(database)
 	articleRepo := repository.NewArticleRepository(database)
 	tagRepo := repository.NewTagRepository(database)
 	commentRepo := repository.NewCommentRepository(database)
 
-	// 4. Initialize Handlers
+	// 5. Initialize Handlers
 	userHandler := handlers.NewUserHandler(userRepo, cfg.JWTSecret)
-	articleHandler := handlers.NewArticleHandler(articleRepo)
-	tagHandler := handlers.NewTagHandler(tagRepo)
+	articleHandler := handlers.NewArticleHandler(articleRepo, userRepo, cacheService)
+	tagHandler := handlers.NewTagHandler(tagRepo, cacheService)
 	profileHandler := handlers.NewProfileHandler(userRepo)
 	commentHandler := handlers.NewCommentHandler(commentRepo, articleRepo, userRepo)
 
-	// 5. Initialize Echo Framework
+	// 6. Initialize Echo Framework
 	e := echo.New()
 
-	// 6. Setup Routes
+	// 7. Setup Routes
 	routes.SetupRoutes(e, routes.RouterOptions{
 		UserHandler:    userHandler,
 		ArticleHandler: articleHandler,
@@ -51,7 +70,7 @@ func main() {
 		JWTSecret:      cfg.JWTSecret,
 	})
 
-	// 7. Start HTTP Server
+	// 8. Start HTTP Server
 	serverAddr := ":" + cfg.Port
 	log.Printf("Starting Echo HTTP Server on %s...", serverAddr)
 	if err := e.Start(serverAddr); err != nil {

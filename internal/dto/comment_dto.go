@@ -30,14 +30,18 @@ type CommentsResponse struct {
 	Comments []CommentDTO `json:"comments"`
 }
 
-func ToCommentDTO(comment *models.Comment) CommentDTO {
+func ToCommentDTOWithFollowing(comment *models.Comment, isFollowing bool) CommentDTO {
 	return CommentDTO{
 		ID:        comment.ID,
 		CreatedAt: comment.CreatedAt,
 		UpdatedAt: comment.UpdatedAt,
 		Body:      comment.Body,
-		Author:    ToProfileDTO(&comment.Author, false),
+		Author:    ToProfileDTO(&comment.Author, isFollowing),
 	}
+}
+
+func ToCommentDTO(comment *models.Comment) CommentDTO {
+	return ToCommentDTOWithFollowing(comment, false)
 }
 
 func ToCommentsDTO(comments []models.Comment) []CommentDTO {

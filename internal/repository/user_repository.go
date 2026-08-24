@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"realworld-endpoints/internal/models"
 
 	"gorm.io/gorm"
@@ -12,6 +14,12 @@ type UserRepository interface {
 	FindByUsername(username string) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
 	Create(user *models.User) error
+
+	// Follow System
+	Follow(followerID, followedID uint) error
+	Unfollow(followerID, followedID uint) error
+	IsFollowing(followerID, followedID uint) bool
+	GetFollowedUserIDs(followerID uint) ([]uint, error)
 }
 
 type userRepository struct {
@@ -55,7 +63,40 @@ func (r *userRepository) FindByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-
 func (r *userRepository) Create(user *models.User) error {
 	return r.db.Create(user).Error
+}
+
+func (r *userRepository) Follow(followerID, followedID uint) error {
+	follow := models.UserFollow{
+		FollowerID: followerID,
+		FollowedID: followedID,
+		CreatedAt:  time.Now(),
+	}
+	return r.db.Where(models.UserFollow{FollowerID: followerID, FollowedID: followedID}).
+		FirstOrCreate(&follow).Error
+}
+
+func (r *userRepository) Unfollow(followerID, followedID uint) error {
+	return r.db.Where("follower_id = ? AND followed_id = ?", followerID, followedID).
+		Delete(&models.UserFollow{}).Error
+}
+
+func (r *userRepository) IsFollowing(followerID, followedID uint) bool {
+	if followerID == 0 || followedID == 0 {
+		return false
+	}
+	var count int64
+	r.db.Model(&models.UserFollow{}).
+		Where("follower_id = ? AND followed_id = ?", followerID, followedID).
+		Count(&count)
+	return count > 0
+}
+
+func (r *userRepository) GetFollowedUserIDs(followerID uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.Model(&models.UserFollow{}).
+		Where("follower_id = ?", followerID).
+		Pluck("followed_id", &ids).Error
+	return ids, err
 }

@@ -17,3 +17,9 @@ type Article struct {
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
+
+type ArticleFavorite struct {
+	UserID    uint      `gorm:"primaryKey;index" json:"userId"`
+	ArticleID uint      `gorm:"primaryKey;index" json:"articleId"`
+	CreatedAt time.Time `json:"createdAt"`
+}
