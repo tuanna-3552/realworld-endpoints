@@ -24,6 +24,13 @@ func NewTagHandler(tagRepo repository.TagRepository, cacheService cache.CacheSer
 }
 
 // GetTags handles GET /api/tags
+// @Summary      Get tags
+// @Description  Get a list of all tags used across articles
+// @Tags         Tags
+// @Produce      json
+// @Success      200  {object}  dto.TagsResponse
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /tags [get]
 func (h *TagHandler) GetTags(c echo.Context) error {
 	ctx := c.Request().Context()
 	

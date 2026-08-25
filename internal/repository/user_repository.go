@@ -20,6 +20,7 @@ type UserRepository interface {
 	Unfollow(followerID, followedID uint) error
 	IsFollowing(followerID, followedID uint) bool
 	GetFollowedUserIDs(followerID uint) ([]uint, error)
+	BatchIsFollowing(followerID uint, followedIDs []uint) (map[uint]bool, error)
 }
 
 type userRepository struct {
@@ -100,3 +101,22 @@ func (r *userRepository) GetFollowedUserIDs(followerID uint) ([]uint, error) {
 		Pluck("followed_id", &ids).Error
 	return ids, err
 }
+
+func (r *userRepository) BatchIsFollowing(followerID uint, followedIDs []uint) (map[uint]bool, error) {
+	result := make(map[uint]bool)
+	if followerID == 0 || len(followedIDs) == 0 {
+		return result, nil
+	}
+	var followingIDs []uint
+	err := r.db.Model(&models.UserFollow{}).
+		Where("follower_id = ? AND followed_id IN ?", followerID, followedIDs).
+		Pluck("followed_id", &followingIDs).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range followingIDs {
+		result[id] = true
+	}
+	return result, nil
+}
+

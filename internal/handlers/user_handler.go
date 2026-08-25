@@ -25,6 +25,13 @@ func NewUserHandler(userRepo repository.UserRepository, jwtSecret string) *UserH
 }
 
 // GetUsers handles GET /api/users (List all users)
+// @Summary      List all users
+// @Description  Returns a list of all registered users
+// @Tags         Users
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /users [get]
 func (h *UserHandler) GetUsers(c echo.Context) error {
 	users, err := h.userRepo.FindAll()
 	if err != nil {
@@ -39,6 +46,16 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 }
 
 // Register handles POST /api/users (User Registration)
+// @Summary      Register a new user
+// @Description  Create a new user account and return JWT token
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        user  body      dto.UserRegisterRequest  true  "User registration payload"
+// @Success      201   {object}  dto.UserResponse
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      422   {object}  map[string]interface{}
+// @Router       /users [post]
 func (h *UserHandler) Register(c echo.Context) error {
 	var req dto.UserRegisterRequest
 	if err := c.Bind(&req); err != nil {
@@ -99,6 +116,16 @@ func (h *UserHandler) Register(c echo.Context) error {
 }
 
 // Login handles POST /api/users/login (User Authentication)
+// @Summary      User login
+// @Description  Authenticate a user and return JWT token
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        user  body      dto.UserLoginRequest  true  "User login credentials"
+// @Success      200   {object}  dto.UserResponse
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      422   {object}  map[string]interface{}
+// @Router       /users/login [post]
 func (h *UserHandler) Login(c echo.Context) error {
 	var req dto.UserLoginRequest
 	if err := c.Bind(&req); err != nil {
@@ -139,6 +166,15 @@ func (h *UserHandler) Login(c echo.Context) error {
 }
 
 // GetCurrentUser handles GET /api/user (Get current user by token)
+// @Summary      Get current user
+// @Description  Get the currently authenticated user profile
+// @Tags         Users
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Success      200  {object}  dto.UserResponse
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /user [get]
 func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 	userIDVal := c.Get("user_id")
 	if userIDVal == nil {

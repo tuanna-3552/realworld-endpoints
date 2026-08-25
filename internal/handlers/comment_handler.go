@@ -30,6 +30,15 @@ func NewCommentHandler(
 }
 
 // GetComments handles GET /api/articles/:slug/comments
+// @Summary      Get comments for an article
+// @Description  Get all comments for an article identified by slug
+// @Tags         Comments
+// @Produce      json
+// @Param        slug  path  string  true  "Article slug"
+// @Success      200  {object}  dto.CommentsResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /articles/{slug}/comments [get]
 func (h *CommentHandler) GetComments(c echo.Context) error {
 	slug := c.Param("slug")
 	if slug == "" {
@@ -48,16 +57,36 @@ func (h *CommentHandler) GetComments(c echo.Context) error {
 		}
 	}
 
+	authorIDs := make([]uint, len(comments))
+	for i, c := range comments {
+		authorIDs[i] = c.AuthorID
+	}
+	folMap, _ := h.userRepo.BatchIsFollowing(currentUserID, authorIDs)
+
 	commentsDTO := make([]dto.CommentDTO, 0, len(comments))
 	for _, comment := range comments {
-		isFol := h.userRepo.IsFollowing(currentUserID, comment.AuthorID)
-		commentsDTO = append(commentsDTO, dto.ToCommentDTOWithFollowing(&comment, isFol))
+		commentsDTO = append(commentsDTO, dto.ToCommentDTOWithFollowing(
+			&comment, folMap[comment.AuthorID],
+		))
 	}
 
 	return c.JSON(http.StatusOK, dto.CommentsResponse{Comments: commentsDTO})
 }
 
 // CreateComment handles POST /api/articles/:slug/comments
+// @Summary      Add comment to an article
+// @Description  Create a new comment on an article
+// @Tags         Comments
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        slug     path  string                    true  "Article slug"
+// @Param        comment  body  dto.CreateCommentRequest  true  "Comment payload"
+// @Success      201  {object}  dto.CommentResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      422  {object}  map[string]interface{}
+// @Router       /articles/{slug}/comments [post]
 func (h *CommentHandler) CreateComment(c echo.Context) error {
 	slug := c.Param("slug")
 	if slug == "" {
@@ -108,6 +137,19 @@ func (h *CommentHandler) CreateComment(c echo.Context) error {
 }
 
 // DeleteComment handles DELETE /api/articles/:slug/comments/:id (Ownership check)
+// @Summary      Delete a comment
+// @Description  Delete a comment (only the author of the comment can delete it)
+// @Tags         Comments
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        slug  path  string  true  "Article slug"
+// @Param        id    path  int     true  "Comment ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      403  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /articles/{slug}/comments/{id} [delete]
 func (h *CommentHandler) DeleteComment(c echo.Context) error {
 	slug := c.Param("slug")
 	if slug == "" {

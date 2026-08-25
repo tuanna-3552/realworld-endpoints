@@ -27,6 +27,18 @@ func NewArticleHandler(articleRepo repository.ArticleRepository, userRepo reposi
 }
 
 // GetArticles handles GET /api/articles (Filter & Pagination)
+// @Summary      List articles
+// @Description  List articles with optional filtering by tag, author, favorited user, and pagination
+// @Tags         Articles
+// @Produce      json
+// @Param        tag        query   string  false  "Filter by tag"
+// @Param        author     query   string  false  "Filter by author username"
+// @Param        favorited  query   string  false  "Filter by favorited username"
+// @Param        limit      query   int     false  "Limit number of articles (default 20)"
+// @Param        offset     query   int     false  "Offset/skip number of articles (default 0)"
+// @Success      200  {object}  dto.ArticlesResponse
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /articles [get]
 func (h *ArticleHandler) GetArticles(c echo.Context) error {
 	tag := c.QueryParam("tag")
 	author := c.QueryParam("author")
@@ -68,11 +80,20 @@ func (h *ArticleHandler) GetArticles(c echo.Context) error {
 		})
 	}
 
+	articleIDs := make([]uint, len(articles))
+	authorIDs := make([]uint, len(articles))
+	for i, a := range articles {
+		articleIDs[i] = a.ID
+		authorIDs[i] = a.AuthorID
+	}
+	favMap, _ := h.articleRepo.BatchIsFavorited(currentUserID, articleIDs)
+	folMap, _ := h.userRepo.BatchIsFollowing(currentUserID, authorIDs)
+
 	articlesDTO := make([]dto.ArticleDTO, 0, len(articles))
 	for _, article := range articles {
-		isFav := h.articleRepo.IsFavorited(currentUserID, article.ID)
-		isFol := h.userRepo.IsFollowing(currentUserID, article.AuthorID)
-		articlesDTO = append(articlesDTO, dto.ToArticleDTOWithStatus(&article, isFav, isFol))
+		articlesDTO = append(articlesDTO, dto.ToArticleDTOWithStatus(
+			&article, favMap[article.ID], folMap[article.AuthorID],
+		))
 	}
 
 	resp := dto.ArticlesResponse{
@@ -90,6 +111,17 @@ func (h *ArticleHandler) GetArticles(c echo.Context) error {
 }
 
 // GetFeed handles GET /api/articles/feed (User Feed for followed authors)
+// @Summary      Feed articles
+// @Description  Get articles from users that the current user follows
+// @Tags         Articles
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        limit   query   int  false  "Limit number of articles (default 20)"
+// @Param        offset  query   int  false  "Offset/skip number of articles (default 0)"
+// @Success      200  {object}  dto.ArticlesResponse
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /articles/feed [get]
 func (h *ArticleHandler) GetFeed(c echo.Context) error {
 	currentUserIDVal := c.Get("user_id")
 	if currentUserIDVal == nil {
@@ -123,10 +155,17 @@ func (h *ArticleHandler) GetFeed(c echo.Context) error {
 		})
 	}
 
+	articleIDs := make([]uint, len(articles))
+	for i, a := range articles {
+		articleIDs[i] = a.ID
+	}
+	favMap, _ := h.articleRepo.BatchIsFavorited(currentUserID, articleIDs)
+
 	articlesDTO := make([]dto.ArticleDTO, 0, len(articles))
 	for _, article := range articles {
-		isFav := h.articleRepo.IsFavorited(currentUserID, article.ID)
-		articlesDTO = append(articlesDTO, dto.ToArticleDTOWithStatus(&article, isFav, true))
+		articlesDTO = append(articlesDTO, dto.ToArticleDTOWithStatus(
+			&article, favMap[article.ID], true,
+		))
 	}
 
 	return c.JSON(http.StatusOK, dto.ArticlesResponse{
@@ -136,6 +175,15 @@ func (h *ArticleHandler) GetFeed(c echo.Context) error {
 }
 
 // GetArticleBySlug handles GET /api/articles/:slug
+// @Summary      Get article by slug
+// @Description  Get a single article by its slug
+// @Tags         Articles
+// @Produce      json
+// @Param        slug  path  string  true  "Article slug"
+// @Success      200  {object}  dto.ArticleResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /articles/{slug} [get]
 func (h *ArticleHandler) GetArticleBySlug(c echo.Context) error {
 	slug := c.Param("slug")
 	if slug == "" {
@@ -184,6 +232,17 @@ func (h *ArticleHandler) GetArticleBySlug(c echo.Context) error {
 }
 
 // FavoriteArticle handles POST /api/articles/:slug/favorite
+// @Summary      Favorite an article
+// @Description  Mark an article as favorite for the current user
+// @Tags         Favorites
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        slug  path  string  true  "Article slug"
+// @Success      200  {object}  dto.ArticleResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /articles/{slug}/favorite [post]
 func (h *ArticleHandler) FavoriteArticle(c echo.Context) error {
 	slug := c.Param("slug")
 	if slug == "" {
@@ -222,6 +281,17 @@ func (h *ArticleHandler) FavoriteArticle(c echo.Context) error {
 }
 
 // UnfavoriteArticle handles DELETE /api/articles/:slug/favorite
+// @Summary      Unfavorite an article
+// @Description  Remove an article from the current user's favorites
+// @Tags         Favorites
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        slug  path  string  true  "Article slug"
+// @Success      200  {object}  dto.ArticleResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /articles/{slug}/favorite [delete]
 func (h *ArticleHandler) UnfavoriteArticle(c echo.Context) error {
 	slug := c.Param("slug")
 	if slug == "" {

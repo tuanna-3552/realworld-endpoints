@@ -11,10 +11,22 @@ import (
 	"realworld-endpoints/internal/repository"
 	"realworld-endpoints/internal/routes"
 
+	_ "realworld-endpoints/docs/swagger"
+
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
+// @title           RealWorld Conduit API
+// @version         1.0
+// @description     Backend API implementing the RealWorld spec built with Go, Echo Framework, GORM, and PostgreSQL.
+// @host            localhost:8080
+// @BasePath        /api
+// @securityDefinitions.apikey  ApiKeyAuth
+// @in                          header
+// @name                        Authorization
+// @description                 JWT Token. Format: "Token {token}"
 func main() {
 	// 1. Load configuration
 	cfg, err := config.LoadConfig()
@@ -59,6 +71,12 @@ func main() {
 
 	// 6. Initialize Echo Framework
 	e := echo.New()
+
+	// Swagger UI (development mode only)
+	if cfg.IsDevelopment() {
+		e.GET("/swagger/*", echoSwagger.WrapHandler)
+		log.Println("[Swagger] UI enabled at /swagger/index.html (APP_ENV=development)")
+	}
 
 	// 7. Setup Routes
 	routes.SetupRoutes(e, routes.RouterOptions{

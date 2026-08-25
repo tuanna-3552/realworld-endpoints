@@ -18,6 +18,15 @@ func NewProfileHandler(userRepo repository.UserRepository) *ProfileHandler {
 }
 
 // GetProfile handles GET /api/profiles/:username
+// @Summary      Get user profile
+// @Description  Get a user's public profile by username
+// @Tags         Profiles
+// @Produce      json
+// @Param        username  path  string  true  "Username"
+// @Success      200  {object}  dto.ProfileResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /profiles/{username} [get]
 func (h *ProfileHandler) GetProfile(c echo.Context) error {
 	username := c.Param("username")
 	if username == "" {
@@ -41,6 +50,17 @@ func (h *ProfileHandler) GetProfile(c echo.Context) error {
 }
 
 // FollowUser handles POST /api/profiles/:username/follow
+// @Summary      Follow a user
+// @Description  Follow a user by username
+// @Tags         Profiles
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        username  path  string  true  "Username to follow"
+// @Success      200  {object}  dto.ProfileResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /profiles/{username}/follow [post]
 func (h *ProfileHandler) FollowUser(c echo.Context) error {
 	username := c.Param("username")
 	if username == "" {
@@ -67,6 +87,17 @@ func (h *ProfileHandler) FollowUser(c echo.Context) error {
 }
 
 // UnfollowUser handles DELETE /api/profiles/:username/follow
+// @Summary      Unfollow a user
+// @Description  Unfollow a user by username
+// @Tags         Profiles
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        username  path  string  true  "Username to unfollow"
+// @Success      200  {object}  dto.ProfileResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /profiles/{username}/follow [delete]
 func (h *ProfileHandler) UnfollowUser(c echo.Context) error {
 	username := c.Param("username")
 	if username == "" {

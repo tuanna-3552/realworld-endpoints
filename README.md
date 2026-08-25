@@ -11,6 +11,8 @@ An exemplary backend application implementing the [RealWorld](https://github.com
 - **ORM:** [GORM](https://gorm.io/)
 - **Database:** PostgreSQL 16 (via Docker Compose)
 - **Authentication:** JWT (`github.com/golang-jwt/jwt/v5`) & bcrypt (`golang.org/x/crypto/bcrypt`)
+- **API Documentation:** [Swagger/OpenAPI](https://swagger.io/) via [swaggo](https://github.com/swaggo/swag) + [echo-swagger](https://github.com/swaggo/echo-swagger)
+- **Caching:** [Redis](https://redis.io/) via `go-redis/v9`
 - **Environment Management:** [godotenv](https://github.com/joho/godotenv)
 
 ---
@@ -88,6 +90,24 @@ go run ./cmd/api
 ```
 
 The server will initialize the PostgreSQL connection, execute GORM AutoMigrate for all models, and listen on `http://localhost:8080`.
+
+---
+
+## 📖 API Documentation (Swagger)
+
+When running in development mode (`APP_ENV=development`, the default), interactive API documentation is available via Swagger UI:
+
+```
+http://localhost:8080/swagger/index.html
+```
+
+To regenerate the Swagger docs after modifying handler annotations:
+
+```bash
+swag init --generalInfo cmd/api/main.go --output docs/swagger --parseDependency --parseInternal
+```
+
+> **Note:** Swagger UI is disabled in production (`APP_ENV=production`).
 
 ---
 
@@ -195,4 +215,4 @@ go build -o api.exe ./cmd/api
 - [x] **Step 5:** Middleware, Filtering & Pagination (Optional Auth Middleware, query parameters filtering by `tag`/`author`/`favorited`, `limit`/`offset` pagination, `GET /api/articles/feed`).
 - [x] **Step 6:** Social Features - Like, Follow & Comment (Favorite/Unfavorite articles, follow/unfollow users, delete comments with ownership check).
 - [x] **Step 7:** Testing & Optimization (Unit testing with `httptest`, Redis caching for high-frequency endpoints, `.env` management).
-- [ ] **Step 8:** Summary & Final Build (Swagger/OpenAPI integration, GORM query optimization avoiding N+1 problem).
+- [x] **Step 8:** Summary & Final Build (Swagger/OpenAPI integration, GORM query optimization avoiding N+1 problem).

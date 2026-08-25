@@ -121,3 +121,15 @@ func (m *MockUserRepository) GetFollowedUserIDs(followerID uint) ([]uint, error)
 	}
 	return ids, nil
 }
+
+func (m *MockUserRepository) BatchIsFollowing(followerID uint, followedIDs []uint) (map[uint]bool, error) {
+	result := make(map[uint]bool)
+	for _, followedID := range followedIDs {
+		key := fmt.Sprintf("%d-%d", followerID, followedID)
+		if m.Follows[key] {
+			result[followedID] = true
+		}
+	}
+	return result, nil
+}
+

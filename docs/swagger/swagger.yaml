@@ -1,0 +1,676 @@
+basePath: /api
+definitions:
+  realworld-endpoints_internal_dto.ArticleDTO:
+    properties:
+      author:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.ProfileDTO'
+      body:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      favorited:
+        type: boolean
+      favoritesCount:
+        type: integer
+      slug:
+        type: string
+      tagList:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  realworld-endpoints_internal_dto.ArticleResponse:
+    properties:
+      article:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.ArticleDTO'
+    type: object
+  realworld-endpoints_internal_dto.ArticlesResponse:
+    properties:
+      articles:
+        items:
+          $ref: '#/definitions/realworld-endpoints_internal_dto.ArticleDTO'
+        type: array
+      articlesCount:
+        type: integer
+    type: object
+  realworld-endpoints_internal_dto.CommentDTO:
+    properties:
+      author:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.ProfileDTO'
+      body:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  realworld-endpoints_internal_dto.CommentResponse:
+    properties:
+      comment:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.CommentDTO'
+    type: object
+  realworld-endpoints_internal_dto.CommentsResponse:
+    properties:
+      comments:
+        items:
+          $ref: '#/definitions/realworld-endpoints_internal_dto.CommentDTO'
+        type: array
+    type: object
+  realworld-endpoints_internal_dto.CreateCommentInput:
+    properties:
+      body:
+        type: string
+    type: object
+  realworld-endpoints_internal_dto.CreateCommentRequest:
+    properties:
+      comment:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.CreateCommentInput'
+    type: object
+  realworld-endpoints_internal_dto.ProfileDTO:
+    properties:
+      bio:
+        type: string
+      following:
+        type: boolean
+      image:
+        type: string
+      username:
+        type: string
+    type: object
+  realworld-endpoints_internal_dto.ProfileResponse:
+    properties:
+      profile:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.ProfileDTO'
+    type: object
+  realworld-endpoints_internal_dto.TagsResponse:
+    properties:
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
+  realworld-endpoints_internal_dto.UserDTO:
+    properties:
+      bio:
+        type: string
+      email:
+        type: string
+      image:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  realworld-endpoints_internal_dto.UserLoginParams:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  realworld-endpoints_internal_dto.UserLoginRequest:
+    properties:
+      user:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.UserLoginParams'
+    type: object
+  realworld-endpoints_internal_dto.UserRegisterParams:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  realworld-endpoints_internal_dto.UserRegisterRequest:
+    properties:
+      user:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.UserRegisterParams'
+    type: object
+  realworld-endpoints_internal_dto.UserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/realworld-endpoints_internal_dto.UserDTO'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Backend API implementing the RealWorld spec built with Go, Echo Framework,
+    GORM, and PostgreSQL.
+  title: RealWorld Conduit API
+  version: "1.0"
+paths:
+  /articles:
+    get:
+      description: List articles with optional filtering by tag, author, favorited
+        user, and pagination
+      parameters:
+      - description: Filter by tag
+        in: query
+        name: tag
+        type: string
+      - description: Filter by author username
+        in: query
+        name: author
+        type: string
+      - description: Filter by favorited username
+        in: query
+        name: favorited
+        type: string
+      - description: Limit number of articles (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset/skip number of articles (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ArticlesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List articles
+      tags:
+      - Articles
+  /articles/{slug}:
+    get:
+      description: Get a single article by its slug
+      parameters:
+      - description: Article slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ArticleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get article by slug
+      tags:
+      - Articles
+  /articles/{slug}/comments:
+    get:
+      description: Get all comments for an article identified by slug
+      parameters:
+      - description: Article slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.CommentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get comments for an article
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      description: Create a new comment on an article
+      parameters:
+      - description: Article slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Comment payload
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/realworld-endpoints_internal_dto.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.CommentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Add comment to an article
+      tags:
+      - Comments
+  /articles/{slug}/comments/{id}:
+    delete:
+      description: Delete a comment (only the author of the comment can delete it)
+      parameters:
+      - description: Article slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a comment
+      tags:
+      - Comments
+  /articles/{slug}/favorite:
+    delete:
+      description: Remove an article from the current user's favorites
+      parameters:
+      - description: Article slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ArticleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Unfavorite an article
+      tags:
+      - Favorites
+    post:
+      description: Mark an article as favorite for the current user
+      parameters:
+      - description: Article slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ArticleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Favorite an article
+      tags:
+      - Favorites
+  /articles/feed:
+    get:
+      description: Get articles from users that the current user follows
+      parameters:
+      - description: Limit number of articles (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset/skip number of articles (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ArticlesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Feed articles
+      tags:
+      - Articles
+  /profiles/{username}:
+    get:
+      description: Get a user's public profile by username
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get user profile
+      tags:
+      - Profiles
+  /profiles/{username}/follow:
+    delete:
+      description: Unfollow a user by username
+      parameters:
+      - description: Username to unfollow
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Unfollow a user
+      tags:
+      - Profiles
+    post:
+      description: Follow a user by username
+      parameters:
+      - description: Username to follow
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.ProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Follow a user
+      tags:
+      - Profiles
+  /tags:
+    get:
+      description: Get a list of all tags used across articles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.TagsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get tags
+      tags:
+      - Tags
+  /user:
+    get:
+      description: Get the currently authenticated user profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get current user
+      tags:
+      - Users
+  /users:
+    get:
+      description: Returns a list of all registered users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account and return JWT token
+      parameters:
+      - description: User registration payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/realworld-endpoints_internal_dto.UserRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - Users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return JWT token
+      parameters:
+      - description: User login credentials
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/realworld-endpoints_internal_dto.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/realworld-endpoints_internal_dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - Users
+securityDefinitions:
+  ApiKeyAuth:
+    description: 'JWT Token. Format: "Token {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

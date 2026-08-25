@@ -144,3 +144,15 @@ func (m *MockArticleRepository) IsFavorited(userID, articleID uint) bool {
 	key := fmt.Sprintf("%d-%d", userID, articleID)
 	return m.Favorites[key]
 }
+
+func (m *MockArticleRepository) BatchIsFavorited(userID uint, articleIDs []uint) (map[uint]bool, error) {
+	result := make(map[uint]bool)
+	for _, articleID := range articleIDs {
+		key := fmt.Sprintf("%d-%d", userID, articleID)
+		if m.Favorites[key] {
+			result[articleID] = true
+		}
+	}
+	return result, nil
+}
+

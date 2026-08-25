@@ -21,6 +21,7 @@ type ArticleRepository interface {
 	Favorite(userID, articleID uint) error
 	Unfavorite(userID, articleID uint) error
 	IsFavorited(userID, articleID uint) bool
+	BatchIsFavorited(userID uint, articleIDs []uint) (map[uint]bool, error)
 }
 
 type articleRepository struct {
@@ -152,3 +153,22 @@ func (r *articleRepository) IsFavorited(userID, articleID uint) bool {
 		Count(&count)
 	return count > 0
 }
+
+func (r *articleRepository) BatchIsFavorited(userID uint, articleIDs []uint) (map[uint]bool, error) {
+	result := make(map[uint]bool)
+	if userID == 0 || len(articleIDs) == 0 {
+		return result, nil
+	}
+	var favArticleIDs []uint
+	err := r.db.Model(&models.ArticleFavorite{}).
+		Where("user_id = ? AND article_id IN ?", userID, articleIDs).
+		Pluck("article_id", &favArticleIDs).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range favArticleIDs {
+		result[id] = true
+	}
+	return result, nil
+}
+

@@ -19,6 +19,9 @@ type Config struct {
 	DBSSLMode  string
 	JWTSecret  string
 
+	// Application Environment
+	AppEnv string
+
 	// Redis Configuration
 	RedisHost     string
 	RedisPort     string
@@ -44,6 +47,7 @@ func LoadConfig() (*Config, error) {
 		DBName:     getEnv("DB_NAME", "realworld"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 		JWTSecret:  getEnv("JWT_SECRET", "secret-jwt-key-change-in-production"),
+		AppEnv:     getEnv("APP_ENV", "development"),
 
 		RedisHost:     getEnv("REDIS_HOST", "127.0.0.1"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
@@ -89,6 +93,11 @@ func (c *Config) DSN() string {
 // RedisAddr returns the Redis server address in "host:port" format
 func (c *Config) RedisAddr() string {
 	return fmt.Sprintf("%s:%s", c.RedisHost, c.RedisPort)
+}
+
+// IsDevelopment returns true if the application is running in development mode
+func (c *Config) IsDevelopment() bool {
+	return c.AppEnv == "development"
 }
 
 func getEnv(key, fallback string) string {
